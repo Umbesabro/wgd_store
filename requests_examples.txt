@@ -1,0 +1,3 @@
+* Save sales order:
+curl -XPOST localhost:3000/api/order/sales/create -d '{"orderDate":"2023-01-31","deliveryDate":"2023-02-02","positions":[{"productId":"1","quantity":2}]}' -H 'Content-Type: application/json'
+
