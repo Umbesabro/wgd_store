@@ -1,5 +1,6 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { SalesOrder } from 'src/db/entity/sales-order';
+import { SalesClient } from 'wgd_event_log_client';
 import { SalesOrderDto } from './dto/sales-order.dto';
 import { SalesOrderService } from './sales-order.service';
 
@@ -7,8 +8,4 @@ import { SalesOrderService } from './sales-order.service';
 export class SalesOrderController {
   constructor(private readonly salesOrderService: SalesOrderService) {}
 
-  @Post('/create')
-  createSalesOrder(@Body() salesOrderDto: SalesOrderDto): SalesOrder {
-    return this.salesOrderService.createSalesOrder(salesOrderDto);
-  }
 }

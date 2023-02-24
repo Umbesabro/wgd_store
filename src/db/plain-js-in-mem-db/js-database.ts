@@ -16,8 +16,8 @@ export class JsDatabase implements DatabaseServiceAPI {
     //temp
     console.log(`
         SalesOrders:
-        ${JSON.stringify(this.database.getSalesOrders(),null,2)}
-    `)
+        ${JSON.stringify(this.database.getSalesOrders(), null, 2)}
+    `);
 
     return salesOrder;
   }
