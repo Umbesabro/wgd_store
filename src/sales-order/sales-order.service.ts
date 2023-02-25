@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { SalesOrder } from 'src/db/entity/sales-order';
 import { JsDatabase } from 'src/db/plain-js-in-mem-db/js-database';
-import { SalesOrderDto } from './dto/sales-order.dto';
+import { SalesOrderDto } from 'src/dto/sales-order.dto';
+import { EventLogClient } from 'src/event-log-client/sales/event-log-client';
 import { ORDER_STATUS } from './order-status';
 
 @Injectable()
@@ -9,21 +10,47 @@ export class SalesOrderService {
   private readonly maxRetries = 3;
   private readonly retryTimeout = 5 * 1000;
 
-  constructor(private readonly jsDatabase: JsDatabase) {}
+  constructor(
+    private readonly jsDatabase: JsDatabase,
+    private readonly eventLogClient: EventLogClient
+  ) {}
 
   createSalesOrder(salesOrderDto: SalesOrderDto): void {
     this.jsDatabase.saveSalesOrder(salesOrderDto);
   }
 
-  dispatchSalesOrder(id: number): void {
-    this.updateSalesOrderStatus(id, ORDER_STATUS.DISPATCH_REQUESTED);
+  async dispatchSalesOrder(id: number) {
+    const updatedSalesOrder = await this.retryUpdateSalesOrderStatusWithDelay(
+      id,
+      ORDER_STATUS.DISPATCH_REQUESTED
+    );
+    console.log(
+      `Updated status of sales order: ${JSON.stringify(updatedSalesOrder)}`
+    );
   }
 
-  private updateSalesOrderStatus(id: number, status: string): void {
-    if (!this.jsDatabase.orderExists(id)) {
-      this.retryUpdateSalesOrderStatus(id, status);
-    } else if (this.isStatusTransitionAllowed(id, status)) {
-      this.jsDatabase.changeSalesOrderStatus(id, status);
+  private async retryUpdateSalesOrderStatusWithDelay(
+    id: number,
+    status: string,
+    retries = this.maxRetries,
+    interval = this.retryTimeout,
+    finalErr = `Failed to updated status of sales order, aborting`
+  ): Promise<SalesOrderDto> {
+    try {
+      return await this.updateSalesOrderStatus(id, status);
+    } catch (err) {
+      console.log(err);
+      if (retries <= 0) {
+        return Promise.reject(finalErr);
+      }
+      await this.wait(interval);
+      return this.retryUpdateSalesOrderStatusWithDelay(
+        id,
+        status,
+        retries - 1,
+        interval,
+        finalErr
+      );
     }
   }
 
@@ -40,30 +67,23 @@ export class SalesOrderService {
     return isTransitionAllowed;
   }
 
-  private retryUpdateSalesOrderStatus(
+  private async updateSalesOrderStatus(
     id: number,
-    status: string,
-    retryCount: number = 0
-  ): void {
-    if (!this.jsDatabase.orderExists(id) && retryCount < this.maxRetries) {
-      console.error(
+    status: string
+  ): Promise<SalesOrderDto> {
+    if (!this.jsDatabase.orderExists(id)) {
+      throw new Error(
         `Failed to updated status of sales order with id:${id}, order doesn't exist, will retry in ${
           this.retryTimeout / 1000
         } sec`
       );
-      setTimeout(
-        () => this.retryUpdateSalesOrderStatus(id, status, ++retryCount),
-        this.retryTimeout
-      );
-    } else if (
-      this.jsDatabase.orderExists(id) &&
-      this.isStatusTransitionAllowed(id, status)
-    ) {
-      this.jsDatabase.changeSalesOrderStatus(id, status);
-    } else if (!this.jsDatabase.orderExists(id)) {
-      console.error(
-        `Failed to updated status of sales order with id:${id} ${retryCount} times, aborting`
-      );
+    } else if (this.isStatusTransitionAllowed(id, status)) {
+      return this.jsDatabase.changeSalesOrderStatus(id, status);
     }
   }
+
+  private wait = (ms) =>
+    new Promise<void>((resolve) => {
+      setTimeout(() => resolve(), ms);
+    });
 }

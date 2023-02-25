@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Message } from 'amqp-ts';
-import { SalesOrderDto } from 'src/sales-order/dto/sales-order.dto';
+import { SalesOrderDto } from 'src/dto/sales-order.dto';
 import { SalesOrderService } from 'src/sales-order/sales-order.service';
 
 @Injectable()
@@ -12,6 +12,19 @@ export class QueueService {
       const { payload } = newSalesOrderEventMsg.getContent();
       const salesOrderDto: SalesOrderDto = JSON.parse(payload);
       this.salesorderService.createSalesOrder(salesOrderDto);
+    } catch (err) {
+      console.error(
+        `Failed to process message ${JSON.stringify(newSalesOrderEventMsg)}`,
+        err
+      );
+    }
+  }
+
+  dispatchFailed(newSalesOrderEventMsg: Message) {
+    try {
+      const { payload } = newSalesOrderEventMsg.getContent();
+      const salesOrderDto: SalesOrderDto = JSON.parse(payload);
+      // this.salesorderService.createSalesOrder(salesOrderDto);
     } catch (err) {
       console.error(
         `Failed to process message ${JSON.stringify(newSalesOrderEventMsg)}`,

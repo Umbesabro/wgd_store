@@ -1,4 +1,4 @@
-import { SalesOrderDto } from 'src/sales-order/dto/sales-order.dto';
+import { SalesOrderDto } from 'src/dto/sales-order.dto';
 import { SalesOrderPosition } from './sales-order-position';
 
 export class SalesOrder {

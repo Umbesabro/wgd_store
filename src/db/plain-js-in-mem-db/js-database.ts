@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { SalesOrderDto } from 'src/sales-order/dto/sales-order.dto';
+import { SalesOrderDto } from 'src/dto/sales-order.dto';
 import { DatabaseServiceAPI } from '../database-service-api';
 import { SalesOrder } from '../entity/sales-order';
 import { Database } from './database';
