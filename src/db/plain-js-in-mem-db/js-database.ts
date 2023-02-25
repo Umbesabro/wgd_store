@@ -10,19 +10,34 @@ export class JsDatabase implements DatabaseServiceAPI {
 
   saveSalesOrder(salesOrderDto: SalesOrderDto): SalesOrder {
     const salesOrder = SalesOrder.fromDto(salesOrderDto);
-    salesOrder.id = 'id' + new Date().getTime();
     this.database.saveSalesOrder(salesOrder);
 
     //temp
     console.log(`
-        SalesOrders:
+        SalesOrders[${this.database.getSalesOrders().length}]:
         ${JSON.stringify(this.database.getSalesOrders(), null, 2)}
     `);
 
     return salesOrder;
   }
 
-  getSalesOrder(id: string) {
-    return this.database.getSalesOrders().filter((so) => so.id === id)[0];
+  changeSalesOrderStatus(id: number, status: string): SalesOrder {
+    const salesOrder = this.database.getSalesOrder(id);
+    salesOrder.status = status;
+    const updatedSalesOrder = this.database.saveSalesOrder(salesOrder);
+    //temp
+    console.log(`
+    SalesOrders[${this.database.getSalesOrders().length}]:
+        ${JSON.stringify(this.database.getSalesOrders(), null, 2)}
+    `);
+    return updatedSalesOrder;
+  }
+
+  getSalesOrder(id: number) {
+    return this.database.getSalesOrder(id);
+  }
+
+  orderExists(id: number): boolean {
+    return this.database.getSalesOrder(id) !== undefined;
   }
 }

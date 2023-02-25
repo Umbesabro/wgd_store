@@ -2,14 +2,14 @@ import { SalesOrderDto } from 'src/sales-order/dto/sales-order.dto';
 import { SalesOrderPosition } from './sales-order-position';
 
 export class SalesOrder {
-  id: string;
+  id: number;
   orderDate: Date;
   deliveryDate: Date;
   positions: Array<SalesOrderPosition>;
+  status: string = 'PENDING';
 
   public static fromDto(salesOrderDto: SalesOrderDto) {
     const salesOrder = new SalesOrder();
-    console.log(salesOrderDto);
     salesOrder.deliveryDate = salesOrderDto.deliveryDate;
     salesOrder.orderDate = salesOrderDto.orderDate;
     salesOrder.positions = [];

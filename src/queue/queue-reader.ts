@@ -7,13 +7,28 @@ import { QUEUES } from './queues';
 export class QueueReader {
   private queues = {};
   private exchanges = {};
-  private connection: Amqp.Connection = new Amqp.Connection('amqp://localhost');
+  private connection: Amqp.Connection = new Amqp.Connection('amqp://localhost'); // TODO move host to cfg/sys env
 
   constructor(private readonly queueService: QueueService) {
     this.subscribeNewSalesOrder(QUEUES.NEW_SALES_ORDER);
+    this.subscribeDispatchOrder(QUEUES.DISPATCH_ORDER);
   }
 
   subscribeNewSalesOrder(queueName) {
+    const queue = this.getQueue(queueName);
+    queue.activateConsumer((message) =>
+      this.queueService.consumeNewSalesOrder(message)
+    );
+  }
+  
+  subscribeDispatchOrder(queueName) {
+    const queue = this.getQueue(queueName);
+    queue.activateConsumer((message) =>
+      this.queueService.dispatchSalesOrder(message)
+    );
+  }
+
+  private getQueue(queueName) {
     let queue;
     let exchange;
     if (!this.queues[queueName]) {
@@ -26,9 +41,6 @@ export class QueueReader {
       queue = this.queues[queueName];
       exchange = this.exchanges[queueName];
     }
-
-    queue.activateConsumer((message) =>
-      this.queueService.consumeNewSalesOrder(message)
-    );
+    return queue;
   }
 }

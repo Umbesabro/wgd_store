@@ -1,15 +1,37 @@
 import { Injectable } from '@nestjs/common';
 import { Message } from 'amqp-ts';
-import { JsDatabase } from 'src/db/plain-js-in-mem-db/js-database';
 import { SalesOrderDto } from 'src/sales-order/dto/sales-order.dto';
+import { SalesOrderService } from 'src/sales-order/sales-order.service';
 
 @Injectable()
 export class QueueService {
-  constructor(private readonly database: JsDatabase) {}
+  constructor(private readonly salesorderService: SalesOrderService) {}
 
-  consumeNewSalesOrder(newSalesOrderEvent: Message) {
-    const { payload } = newSalesOrderEvent.getContent();
-    const salesOrderDto: SalesOrderDto = JSON.parse(payload);
-    this.database.saveSalesOrder(salesOrderDto);
+  consumeNewSalesOrder(newSalesOrderEventMsg: Message) {
+    try {
+      const { payload } = newSalesOrderEventMsg.getContent();
+      const salesOrderDto: SalesOrderDto = JSON.parse(payload);
+      this.salesorderService.createSalesOrder(salesOrderDto);
+    } catch (err) {
+      console.error(
+        `Failed to process message ${JSON.stringify(newSalesOrderEventMsg)}`,
+        err
+      );
+    }
+  }
+
+  dispatchSalesOrder(dispatchSalesOrderEventMsg: Message) {
+    try {
+      const { payload } = dispatchSalesOrderEventMsg.getContent();
+      const { id } = JSON.parse(payload);
+      this.salesorderService.dispatchSalesOrder(id);
+    } catch (err) {
+      console.error(
+        `Failed to process message ${JSON.stringify(
+          dispatchSalesOrderEventMsg
+        )}`,
+        err
+      );
+    }
   }
 }

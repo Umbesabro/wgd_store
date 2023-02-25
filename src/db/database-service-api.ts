@@ -4,6 +4,7 @@ import { SalesOrder } from "./entity/sales-order";
 export interface DatabaseServiceAPI {
 
     saveSalesOrder(salesOrder: SalesOrderDto): SalesOrder;
-    getSalesOrder(id:string): SalesOrder;
+    getSalesOrder(id:number): SalesOrder;
+    orderExists(id: number): boolean;
 
 }
