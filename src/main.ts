@@ -4,6 +4,6 @@ import { QueueReader } from './queue/queue-reader';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.listen(3002);
+  await app.listen(process.env.WGD_STORE_PORT ? process.env.WGD_STORE_PORT: 3002);
 }
 bootstrap();

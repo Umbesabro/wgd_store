@@ -15,7 +15,7 @@ export class JsDatabase implements DatabaseServiceAPI {
     //temp
     console.log(`
         SalesOrders[${this.database.getSalesOrders().length}]:
-        ${JSON.stringify(this.database.getSalesOrders(), null, 2)}
+        ${JSON.stringify(this.database.getSalesOrders())}
     `);
 
     return salesOrder;
@@ -27,9 +27,11 @@ export class JsDatabase implements DatabaseServiceAPI {
     const updatedSalesOrder = this.database.saveSalesOrder(salesOrder);
     //temp
     console.log(`
+    ##############################################################
     SalesOrders[${this.database.getSalesOrders().length}]:
-        ${JSON.stringify(this.database.getSalesOrders(), null, 2)}
-    `);
+        ${JSON.stringify(this.database.getSalesOrders())}
+    ##############################################################
+        `);
     return updatedSalesOrder;
   }
 

@@ -20,12 +20,23 @@ export class SalesOrderService {
   }
 
   async dispatchSalesOrder(id: number) {
-    const updatedSalesOrder = await this.retryUpdateSalesOrderStatusWithDelay(
+    await this.retryUpdateSalesOrderStatusWithDelay(
       id,
       ORDER_STATUS.DISPATCH_REQUESTED
     );
-    console.log(
-      `Updated status of sales order: ${JSON.stringify(updatedSalesOrder)}`
+  }
+
+  async setDispatchFailedStatus(id: number) {
+    await this.retryUpdateSalesOrderStatusWithDelay(
+      id,
+      ORDER_STATUS.DISPATCH_FAILED
+    );
+  }
+
+  async setDispatchSuccessfulStatus(id: number) {
+    await this.retryUpdateSalesOrderStatusWithDelay(
+      id,
+      ORDER_STATUS.DISPATCH_SUCCESSFUL
     );
   }
 
@@ -71,6 +82,7 @@ export class SalesOrderService {
     id: number,
     status: string
   ): Promise<SalesOrderDto> {
+    console.log(`Updating status of sales order id ${id}`);
     if (!this.jsDatabase.orderExists(id)) {
       throw new Error(
         `Failed to updated status of sales order with id:${id}, order doesn't exist, will retry in ${
@@ -78,7 +90,12 @@ export class SalesOrderService {
         } sec`
       );
     } else if (this.isStatusTransitionAllowed(id, status)) {
-      return this.jsDatabase.changeSalesOrderStatus(id, status);
+      const salesOrder: SalesOrder = this.jsDatabase.changeSalesOrderStatus(
+        id,
+        status
+      );
+      console.log(`Updated order status ${JSON.stringify(salesOrder)}`);
+      return SalesOrderDto.fromEntity(salesOrder);
     }
   }
 

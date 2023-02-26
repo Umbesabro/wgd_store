@@ -12,7 +12,8 @@ export class QueueReader {
   constructor(private readonly queueService: QueueService) {
     this.subscribeNewSalesOrder(QUEUES.NEW_SALES_ORDER);
     this.subscribeDispatchOrder(QUEUES.REQUEST_DISPATCH_ORDER);
-    this.subscribeDispatchOrder(QUEUES.DISPATCH_FAILED);
+    this.subscribeDispatchFailed(QUEUES.DISPATCH_FAILED);
+    this.subscribeDispatchSuccessful(QUEUES.DISPATCH_SUCCESSFUL);
   }
 
   subscribeNewSalesOrder(queueName) {
@@ -21,17 +22,25 @@ export class QueueReader {
       this.queueService.consumeNewSalesOrder(message)
     );
   }
-  
+
   subscribeDispatchOrder(queueName) {
     const queue = this.getQueue(queueName);
     queue.activateConsumer((message) =>
       this.queueService.dispatchSalesOrder(message)
     );
-  } 
+  }
+
   subscribeDispatchFailed(queueName) {
     const queue = this.getQueue(queueName);
     queue.activateConsumer((message) =>
       this.queueService.dispatchFailed(message)
+    );
+  }
+
+  subscribeDispatchSuccessful(queueName) {
+    const queue = this.getQueue(queueName);
+    queue.activateConsumer((message) =>
+      this.queueService.dispatchSuccessful(message)
     );
   }
 

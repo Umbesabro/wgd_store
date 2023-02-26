@@ -24,7 +24,20 @@ export class QueueService {
     try {
       const { payload } = newSalesOrderEventMsg.getContent();
       const salesOrderDto: SalesOrderDto = JSON.parse(payload);
-      // this.salesorderService.createSalesOrder(salesOrderDto);
+      this.salesorderService.setDispatchFailedStatus(salesOrderDto.id);
+    } catch (err) {
+      console.error(
+        `Failed to process message ${JSON.stringify(newSalesOrderEventMsg)}`,
+        err
+      );
+    }
+  }
+
+  dispatchSuccessful(newSalesOrderEventMsg: Message) {
+    try {
+      const { payload } = newSalesOrderEventMsg.getContent();
+      const salesOrderDto: SalesOrderDto = JSON.parse(payload);
+      this.salesorderService.setDispatchSuccessfulStatus(salesOrderDto.id);
     } catch (err) {
       console.error(
         `Failed to process message ${JSON.stringify(newSalesOrderEventMsg)}`,

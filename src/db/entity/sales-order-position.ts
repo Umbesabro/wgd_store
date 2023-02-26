@@ -1,4 +1,4 @@
 export type SalesOrderPosition =  {
-    productId: string,
+    productId: number,
     quantity: number
 }
