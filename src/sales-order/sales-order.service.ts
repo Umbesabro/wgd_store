@@ -20,10 +20,13 @@ export class SalesOrderService {
   }
 
   async dispatchSalesOrder(id: number) {
-    await this.retryUpdateSalesOrderStatusWithDelay(
+    const salesOrder = await this.retryUpdateSalesOrderStatusWithDelay(
       id,
       ORDER_STATUS.DISPATCH_REQUESTED
     );
+    if (salesOrder) { // TODO Change to try...catch...this if is needed as I need to change retryUpdate... it returns undefined if failes....
+      this.eventLogClient.dispatchOrderFromWarehouse(salesOrder);
+    }
   }
 
   async setDispatchFailedStatus(id: number) {

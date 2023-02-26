@@ -7,7 +7,7 @@ import { Config } from '../cfg/config';
 
 @Injectable()
 export class EventLogClient {
-  async dispatchOrder(salesOrder: SalesOrderDto): Promise<EventDto> {
+  async dispatchOrderFromWarehouse(salesOrder: SalesOrderDto): Promise<EventDto> {
     const r = await axios.post(Config.createEventUrl, {
       payload: salesOrder,
       name: QUEUES.WAREHOUSE_DISPATCH_ORDER,
