@@ -1,81 +1,47 @@
 import { Injectable } from '@nestjs/common';
-import { SalesOrder } from 'src/db/entity/sales-order';
-import { PsqlSalesOrderClient } from 'src/db/psql/psql-sales-order-client';
+import { SalesOrder } from 'src/db/model/sales-order.model';
+import { PsqlDatabase } from 'src/db/psql-database.service';
 import { SalesOrderDto } from 'src/dto/sales-order.dto';
 import { EventLogClient } from 'src/event-log-client/sales/event-log-client';
 import { ORDER_STATUS } from './order-status';
 
 @Injectable()
 export class SalesOrderService {
-  private readonly maxRetries = 3;
-  private readonly retryTimeout = 5 * 1000;
-
   constructor(
     private readonly eventLogClient: EventLogClient,
-    private readonly sqlDb: PsqlSalesOrderClient
+    private readonly psqlDatabase: PsqlDatabase
   ) {}
 
   createSalesOrder(salesOrderDto: SalesOrderDto): void {
-    this.sqlDb.saveSalesOrder(salesOrderDto);
+    this.psqlDatabase.createSalesOrder(salesOrderDto);
   }
 
   async dispatchSalesOrder(id: number) {
-    const salesOrder = await this.retryUpdateSalesOrderStatusWithDelay(
+    const salesOrder = await this.updateSalesOrderStatus(
       id,
       ORDER_STATUS.DISPATCH_REQUESTED
     );
-    if (salesOrder) { // TODO Change to try...catch...this if is needed as I need to change retryUpdate... it returns undefined if failes....
+    if (salesOrder) {
+      // TODO Change to try...catch...this if is needed as I need to change retryUpdate... it returns undefined if failes....
       this.eventLogClient.dispatchOrderFromWarehouse(salesOrder);
     }
   }
 
   async setDispatchFailedStatus(id: number) {
-    await this.retryUpdateSalesOrderStatusWithDelay(
-      id,
-      ORDER_STATUS.DISPATCH_FAILED
-    );
+    await this.updateSalesOrderStatus(id, ORDER_STATUS.DISPATCH_FAILED);
   }
 
   async setDispatchSuccessfulStatus(id: number) {
-    await this.retryUpdateSalesOrderStatusWithDelay(
-      id,
-      ORDER_STATUS.DISPATCH_SUCCESSFUL
-    );
+    await this.updateSalesOrderStatus(id, ORDER_STATUS.DISPATCH_SUCCESSFUL);
   }
 
-  private async retryUpdateSalesOrderStatusWithDelay(
-    id: number,
-    status: string,
-    retries = this.maxRetries,
-    interval = this.retryTimeout,
-    finalErr = `Failed to updated status of sales order, aborting`
-  ): Promise<SalesOrderDto> {
-    try {
-      return await this.updateSalesOrderStatus(id, status);
-    } catch (err) {
-      console.log(err);
-      if (retries <= 0) {
-        return Promise.reject(finalErr);
-      }
-      await this.wait(interval);
-      return this.retryUpdateSalesOrderStatusWithDelay(
-        id,
-        status,
-        retries - 1,
-        interval,
-        finalErr
-      );
-    }
-  }
-
-  private isStatusTransitionAllowed(id: number, status: string) {
-    const salesOrder: SalesOrder = this.jsDatabase.getSalesOrder(id);
+  private async isStatusTransitionAllowed(salesOrder, status) {
     const isTransitionAllowed =
       ORDER_STATUS.possibleTransitions[salesOrder.status] &&
       ORDER_STATUS.possibleTransitions[salesOrder.status].indexOf(status) > -1;
     if (!isTransitionAllowed) {
       console.error(
-        `Cannot change order status from ${salesOrder.status} to ${status}, order id: ${id}`
+        `Cannot change order status from ${salesOrder.status} to ${status}, order id: ${salesOrder.id}`
       );
     }
     return isTransitionAllowed;
@@ -86,24 +52,22 @@ export class SalesOrderService {
     status: string
   ): Promise<SalesOrderDto> {
     console.log(`Updating status of sales order id ${id}`);
-    if (!this.jsDatabase.orderExists(id)) {
-      throw new Error(
-        `Failed to updated status of sales order with id:${id}, order doesn't exist, will retry in ${
-          this.retryTimeout / 1000
-        } sec`
+    const salesOrder: SalesOrder = await this.psqlDatabase.getSalesOrder(id);
+    if (salesOrder === null) {
+      console.error(
+        `Cannot update status of sales order with id:${id} as it doesn't exist`
       );
-    } else if (this.isStatusTransitionAllowed(id, status)) {
-      const salesOrder: SalesOrder = this.jsDatabase.changeSalesOrderStatus(
-        id,
-        status
-      );
+      return null; // TODO
+    }
+    const isStatusTransationAllowed = await this.isStatusTransitionAllowed(
+      salesOrder,
+      status
+    );
+    if (isStatusTransationAllowed) {
+      salesOrder.status = status;
+      await salesOrder.save();
       console.log(`Updated order status ${JSON.stringify(salesOrder)}`);
       return SalesOrderDto.fromEntity(salesOrder);
     }
   }
-
-  private wait = (ms) =>
-    new Promise<void>((resolve) => {
-      setTimeout(() => resolve(), ms);
-    });
 }

@@ -1,4 +1,4 @@
-import { SalesOrder } from 'src/db/entity/sales-order';
+import { SalesOrder } from 'src/db/model/sales-order.model';
 import { SalesOrderPositionDto } from './sales-order-position.dto';
 
 export class SalesOrderDto {
@@ -10,27 +10,12 @@ export class SalesOrderDto {
 
   static fromEntity(salesOrder: SalesOrder): SalesOrderDto {
     const salesOrderDto: SalesOrderDto = new SalesOrderDto();
-    const {
-      id,
-      order_date: orderDate,
-      delivery_date: deliveryDate,
-      // positions
-    } = salesOrder;
+    const { id, orderDate, deliveryDate, positions } = salesOrder;
+    salesOrder.positions;
     salesOrderDto.id = id;
     salesOrderDto.orderDate = orderDate;
     salesOrderDto.deliveryDate = deliveryDate;
-
-    const dtoPositions: SalesOrderPositionDto[] = [];
-    // positions.forEach((pos) => {
-    //   const saleOrderPosition: SalesOrderPositionDto =
-    //     new SalesOrderPositionDto();
-    //   saleOrderPosition.orderId = pos.order_id;
-    //   saleOrderPosition.productId = pos.product_id;
-    //   saleOrderPosition.quantity = pos.quantity;
-    //   dtoPositions.push(saleOrderPosition);
-    // });
-
-    salesOrderDto.positions = []; // TODO
+    salesOrderDto.positions = [...positions];
     return salesOrderDto;
   }
 }

@@ -1,4 +1,4 @@
-import { DataTypes, Model } from 'sequelize';
+import { DataTypes, HasManyCreateAssociationMixin, Model } from 'sequelize';
 import { SalesOrderPosition } from './sales-order-position.model';
 
 export interface SalesOrderAttributes {
@@ -16,6 +16,8 @@ export class SalesOrder extends Model<SalesOrderAttributes> implements SalesOrde
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
+
+  public positions?: SalesOrderPosition[];
 
   public static associations: {
     positions: any;
@@ -49,6 +51,8 @@ export class SalesOrder extends Model<SalesOrderAttributes> implements SalesOrde
       },
     );
   }
+
+  public createPositions?: HasManyCreateAssociationMixin<SalesOrderPosition>;
 
   public static associate(): void {
     this.hasMany(SalesOrderPosition, {
