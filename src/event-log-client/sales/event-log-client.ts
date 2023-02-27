@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
-import { EventDto } from 'src/dto/event.dto';
-import { SalesOrderDto } from 'src/dto/sales-order.dto';
-import { QUEUES } from 'src/queue/queues';
+import { EventDto } from '../../dto/event.dto';
+import { SalesOrderDto } from '../../dto/sales-order.dto';
+import { QUEUES } from '../../queue/queues';
 import { Config } from '../cfg/config';
 
 @Injectable()

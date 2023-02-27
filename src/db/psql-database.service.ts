@@ -1,45 +1,44 @@
+import { Logger } from '@nestjs/common';
 import { Injectable } from '@nestjs/common/decorators';
-import { Sequelize, Transaction } from 'sequelize';
+import { Model, Sequelize, Transaction } from 'sequelize';
 import { SalesOrderDto } from 'src/dto/sales-order.dto';
 import { SalesOrderPosition } from './model/sales-order-position.model';
 import { SalesOrder } from './model/sales-order.model';
 
 @Injectable()
 export class PsqlDatabase {
-  private readonly sequelize = new Sequelize(
-    'wgd_store',
-    process.env.WGD_PSQL_USER,
-    process.env.WGD_PSQL_PW,
-    {
-      host: 'localhost',
-      dialect: 'postgres',
-      port: 5432,
-      logging: false
-    }
-  );
-
+  private readonly sequelize = new Sequelize('wgd_store', process.env.WGD_PSQL_USER, process.env.WGD_PSQL_PW, {
+    host: 'localhost',
+    dialect: 'postgres',
+    port: 5432,
+    logging: false
+  });
+  private readonly logger = new Logger(PsqlDatabase.name);
   constructor() {
     this.initDatabase();
   }
 
   private initDatabase() {
-    console.log('Initilizing database connection...');
+    this.logger.log('Initilizing database connection...');
     SalesOrder.initModel(this.sequelize);
     SalesOrderPosition.initModel(this.sequelize);
     SalesOrder.associate();
     SalesOrderPosition.associate();
     this.sequelize.sync();
-    console.log('Database connection initilized successfuly');
+    this.logger.log('Database connection initilized successfuly');
   }
 
   getSalesOrder(salesOrderId: number): Promise<SalesOrder> {
     try {
       return SalesOrder.findOne({
         where: { id: salesOrderId },
-        include: [SalesOrderPosition]
+        include: {
+          model: SalesOrderPosition,
+          as: 'positions'
+        }
       });
     } catch (error) {
-      console.error('Failed to fetch SalesOrder:', error);
+      this.logger.error('Failed to fetch SalesOrder:', error);
     }
   }
 
@@ -57,8 +56,7 @@ export class PsqlDatabase {
         },
         { transaction }
       );
-
-      const dbSalesOrderPositions = await Promise.all(
+      await Promise.all(
         positions.map((pos) =>
           SalesOrderPosition.create(
             {
@@ -70,18 +68,22 @@ export class PsqlDatabase {
           )
         )
       );
-      console.log(JSON.stringify(salesOrder));
-
       await transaction.commit();
 
-      console.log('SalesOrder with positions created successfully!');
+      this.logger.log('SalesOrder with positions created successfully!');
     } catch (error) {
-      // rollback the transaction if something went wrong
       if (transaction) {
         await transaction.rollback();
       }
+      this.logger.error('Failed to create SalesOrder with positions:', error);
+    }
+  }
 
-      console.error('Failed to create SalesOrder with positions:', error);
+  save<T extends Model>(model: T): void {
+    try {
+      model.save();
+    } catch (err) {
+      this.logger.error(`Failed to save ${JSON.stringify(model)}`);
     }
   }
 }
