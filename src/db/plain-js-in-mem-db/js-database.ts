@@ -8,17 +8,18 @@ import { Database } from './database';
 export class JsDatabase implements DatabaseServiceAPI {
   private readonly database: Database = new Database();
 
-  saveSalesOrder(salesOrderDto: SalesOrderDto): SalesOrder {
-    const salesOrder = SalesOrder.fromDto(salesOrderDto);
-    this.database.saveSalesOrder(salesOrder);
+  async saveSalesOrder(salesOrderDto: SalesOrderDto): Promise<SalesOrder> {
+    // const salesOrder = SalesOrder.fromDto(salesOrderDto);
+    // this.database.saveSalesOrder(salesOrder);
 
-    //temp
-    console.log(`
-        SalesOrders[${this.database.getSalesOrders().length}]:
-        ${JSON.stringify(this.database.getSalesOrders())}
-    `);
+    // //temp
+    // console.log(`
+    //     SalesOrders[${this.database.getSalesOrders().length}]:
+    //     ${JSON.stringify(this.database.getSalesOrders())}
+    // `);
 
-    return salesOrder;
+    // return salesOrder;
+    return null;
   }
 
   changeSalesOrderStatus(id: number, status: string): SalesOrder {

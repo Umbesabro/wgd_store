@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { SalesOrder } from 'src/db/entity/sales-order';
-import { JsDatabase } from 'src/db/plain-js-in-mem-db/js-database';
+import { PsqlSalesOrderClient } from 'src/db/psql/psql-sales-order-client';
 import { SalesOrderDto } from 'src/dto/sales-order.dto';
 import { EventLogClient } from 'src/event-log-client/sales/event-log-client';
 import { ORDER_STATUS } from './order-status';
@@ -11,12 +11,12 @@ export class SalesOrderService {
   private readonly retryTimeout = 5 * 1000;
 
   constructor(
-    private readonly jsDatabase: JsDatabase,
-    private readonly eventLogClient: EventLogClient
+    private readonly eventLogClient: EventLogClient,
+    private readonly sqlDb: PsqlSalesOrderClient
   ) {}
 
   createSalesOrder(salesOrderDto: SalesOrderDto): void {
-    this.jsDatabase.saveSalesOrder(salesOrderDto);
+    this.sqlDb.saveSalesOrder(salesOrderDto);
   }
 
   async dispatchSalesOrder(id: number) {

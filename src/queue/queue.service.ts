@@ -12,6 +12,7 @@ export class QueueService {
       const { payload } = newSalesOrderEventMsg.getContent();
       const salesOrderDto: SalesOrderDto = JSON.parse(payload);
       this.salesorderService.createSalesOrder(salesOrderDto);
+      newSalesOrderEventMsg.ack(true);
     } catch (err) {
       console.error(
         `Failed to process message ${JSON.stringify(newSalesOrderEventMsg)}`,
@@ -51,6 +52,7 @@ export class QueueService {
       const { payload } = dispatchSalesOrderEventMsg.getContent();
       const { id } = JSON.parse(payload);
       this.salesorderService.dispatchSalesOrder(id);
+      dispatchSalesOrderEventMsg.ack(true);
     } catch (err) {
       console.error(
         `Failed to process message ${JSON.stringify(
