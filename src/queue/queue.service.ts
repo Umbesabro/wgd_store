@@ -1,49 +1,57 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Message } from 'amqp-ts';
-import { SalesOrderDto } from 'src/dto/sales-order.dto';
-import { SalesOrderService } from 'src/sales-order/sales-order.service';
+import { SalesOrderDto } from '../dto/sales-order.dto';
+import { SalesOrderService } from '../sales-order/sales-order.service';
 
 @Injectable()
 export class QueueService {
-  constructor(private readonly salesorderService: SalesOrderService) {}
+  private readonly logger: Logger = new Logger(QueueService.name);
+  constructor(private readonly salesOrderService: SalesOrderService) {}
 
-  consumeNewSalesOrder(newSalesOrderEventMsg: Message) {
+  processNewSalesOrder(newSalesOrderEventMsg: Message) {
     try {
       const { payload } = newSalesOrderEventMsg.getContent();
       const salesOrderDto: SalesOrderDto = JSON.parse(payload);
-      this.salesorderService.createSalesOrder(salesOrderDto);
-      newSalesOrderEventMsg.ack(true);
+      this.salesOrderService
+        .createSalesOrder(salesOrderDto)
+        .then(() => newSalesOrderEventMsg.ack(false))
+        .catch((err) => {
+          this.logger.error(`Failed to create new sales order`, err);
+        });
     } catch (err) {
-      console.error(
-        `Failed to process message ${JSON.stringify(newSalesOrderEventMsg)}`,
-        err
-      );
+      this.logger.error(`Failed to process new sales order event`, err);
     }
   }
 
-  dispatchFailed(newSalesOrderEventMsg: Message) {
+  processDispatchFailed(dispatchFailedEventMsg: Message) {
     try {
-      const { payload } = newSalesOrderEventMsg.getContent();
+      const { payload } = dispatchFailedEventMsg.getContent();
       const salesOrderDto: SalesOrderDto = JSON.parse(payload);
-      this.salesorderService.setDispatchFailedStatus(salesOrderDto.id);
+      this.salesOrderService
+        .setDispatchFailedStatus(salesOrderDto.id)
+        .then(() => dispatchFailedEventMsg.ack(false))
+        .catch((err) => {
+          this.logger.error(`Failed to set dispatch failed status`, err);
+        });
+      dispatchFailedEventMsg.ack(false);
     } catch (err) {
-      console.error(
-        `Failed to process message ${JSON.stringify(newSalesOrderEventMsg)}`,
-        err
-      );
+      this.logger.error(`Failed to process dispatch failed event`, err);
     }
   }
 
-  dispatchSuccessful(newSalesOrderEventMsg: Message) {
+  processDispatchSuccessful(dispatchSuccessfulEventMsg: Message) {
     try {
-      const { payload } = newSalesOrderEventMsg.getContent();
+      const { payload } = dispatchSuccessfulEventMsg.getContent();
       const salesOrderDto: SalesOrderDto = JSON.parse(payload);
-      this.salesorderService.setDispatchSuccessfulStatus(salesOrderDto.id);
+      this.salesOrderService
+        .setDispatchSuccessfulStatus(salesOrderDto.id)
+        .then(() => dispatchSuccessfulEventMsg.ack(false))
+        .catch((err) => {
+          this.logger.error(`Failed to set dispatch successful status`, err);
+        });
+      dispatchSuccessfulEventMsg.ack(false);
     } catch (err) {
-      console.error(
-        `Failed to process message ${JSON.stringify(newSalesOrderEventMsg)}`,
-        err
-      );
+      this.logger.error(`Failed to process dispatch successful event`, err);
     }
   }
 
@@ -51,15 +59,15 @@ export class QueueService {
     try {
       const { payload } = dispatchSalesOrderEventMsg.getContent();
       const { id } = JSON.parse(payload);
-      this.salesorderService.dispatchSalesOrder(id);
-      dispatchSalesOrderEventMsg.ack(true);
+      this.salesOrderService
+        .dispatchSalesOrder(id)
+        .then(() => dispatchSalesOrderEventMsg.ack(false))
+        .catch((err) => {
+          this.logger.error(`Failed to dispatch sales order`, err);
+        });
+      dispatchSalesOrderEventMsg.ack(false);
     } catch (err) {
-      console.error(
-        `Failed to process message ${JSON.stringify(
-          dispatchSalesOrderEventMsg
-        )}`,
-        err
-      );
+      this.logger.error(`Failed to process dispatch sales order event`, err);
     }
   }
 }

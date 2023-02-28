@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { Injectable } from '@nestjs/common/decorators';
+import { Inject, Injectable } from '@nestjs/common/decorators';
 import { Model, Sequelize, Transaction } from 'sequelize';
 import { SalesOrderDto } from 'src/dto/sales-order.dto';
 import { SalesOrderPosition } from './model/sales-order-position.model';
@@ -7,14 +7,9 @@ import { SalesOrder } from './model/sales-order.model';
 
 @Injectable()
 export class PsqlDatabase {
-  private readonly sequelize = new Sequelize('wgd_store', process.env.WGD_PSQL_USER, process.env.WGD_PSQL_PW, {
-    host: 'localhost',
-    dialect: 'postgres',
-    port: 5432,
-    logging: false
-  });
+  
   private readonly logger = new Logger(PsqlDatabase.name);
-  constructor() {
+  constructor(@Inject('SEQUELIZE') private readonly sequelize: Sequelize) {
     this.initDatabase();
   }
 

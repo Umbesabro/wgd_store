@@ -7,7 +7,7 @@ import { ORDER_STATUS } from './order-status';
 
 @Injectable()
 export class SalesOrderService {
-  private readonly logger = new Logger(SalesOrderService.name);
+  private readonly logger: Logger = new Logger(SalesOrderService.name);
 
   constructor(private readonly eventLogClient: EventLogClient, private readonly psqlDatabase: PsqlDatabase) {}
 

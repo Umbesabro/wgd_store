@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import * as Amqp from 'amqp-ts';
 import { QueueService } from './queue.service';
 import { QUEUES } from './queues';
@@ -7,56 +7,58 @@ import { QUEUES } from './queues';
 export class QueueReader {
   private queues = {};
   private exchanges = {};
-  private connection: Amqp.Connection = new Amqp.Connection('amqp://localhost'); // TODO move host to cfg/sys env
 
-  constructor(private readonly queueService: QueueService) {
+  constructor(
+    private readonly queueService: QueueService,
+    @Inject('AMQP_CONNECTION') private readonly connection: Amqp.Connection,
+  ) {
     this.subscribeNewSalesOrder(QUEUES.NEW_SALES_ORDER);
     this.subscribeDispatchOrder(QUEUES.REQUEST_DISPATCH_ORDER);
     this.subscribeDispatchFailed(QUEUES.DISPATCH_FAILED);
     this.subscribeDispatchSuccessful(QUEUES.DISPATCH_SUCCESSFUL);
   }
 
-  subscribeNewSalesOrder(queueName) {
+  private subscribeNewSalesOrder(queueName) {
     const queue = this.getQueue(queueName);
     queue.activateConsumer((message) =>
-      this.queueService.consumeNewSalesOrder(message)
+      this.queueService.processNewSalesOrder(message)
     );
   }
 
-  subscribeDispatchOrder(queueName) {
+  private subscribeDispatchOrder(queueName) {
     const queue = this.getQueue(queueName);
     queue.activateConsumer((message) =>
       this.queueService.dispatchSalesOrder(message)
     );
   }
 
-  subscribeDispatchFailed(queueName) {
+  private subscribeDispatchFailed(queueName) {
     const queue = this.getQueue(queueName);
     queue.activateConsumer((message) =>
-      this.queueService.dispatchFailed(message)
+      this.queueService.processDispatchFailed(message)
     );
   }
 
-  subscribeDispatchSuccessful(queueName) {
+  private subscribeDispatchSuccessful(queueName) {
     const queue = this.getQueue(queueName);
     queue.activateConsumer((message) =>
-      this.queueService.dispatchSuccessful(message)
+      this.queueService.processDispatchSuccessful(message)
     );
   }
 
   private getQueue(queueName) {
-    let queue;
-    let exchange;
     if (!this.queues[queueName]) {
-      queue = this.connection.declareQueue(queueName);
-      exchange = this.connection.declareExchange(queueName);
-      queue.bind(exchange);
+      const { queue, exchange } = this.createQueueAndExchange(queueName);
       this.queues[queueName] = queue;
       this.exchanges[queueName] = exchange;
-    } else {
-      queue = this.queues[queueName];
-      exchange = this.exchanges[queueName];
     }
-    return queue;
+    return this.queues[queueName];
+  }
+
+  private createQueueAndExchange(queueName) {
+    const queue = this.connection.declareQueue(queueName);
+    const exchange = this.connection.declareExchange(queueName);
+    queue.bind(exchange);
+    return { queue, exchange };
   }
 }
